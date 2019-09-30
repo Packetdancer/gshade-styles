@@ -52,9 +52,8 @@
     #define TEXFORMAT RGBA8
 #endif
 
-#include "ReShadeUI.fxh"
-
-uniform float fMask_Intensity < __UNIFORM_SLIDER_FLOAT1
+uniform float fMask_Intensity <
+    ui_type = "slider";
     ui_label = "Mask Intensity";
     ui_tooltip = "How much should the paper obscure the pencil drawing.";
     ui_min = 0.0;
