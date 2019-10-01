@@ -10,3 +10,8 @@ Each style has its own instructions to read about how to use the file, and any c
 
 The "Sketchbook" preset is meant to evoke pencil sketching in a sketchbook; it can be tuned in many different ways, so that the distance fades off into white (unmarked) paper, or into the darkest shading possible. Both effects can be quite useful, depending on the situation in which you use them. Similarly, the background can be faded out entirely, or included in the image.
 
+## OilPainting
+
+![OilPainting Style Example](https://github.com/packetdancer/gshade-styles/raw/master/OilPainting/example.png)
+
+The "OilPainting" preset is meant to look vaguely like a painting, as the name might imply. The detail level and appearance can be tuned somewhat by adjusting the pkd_Kuwahara technique's configuration.

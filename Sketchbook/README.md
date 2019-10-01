@@ -15,7 +15,7 @@ Go to your FFXIV directory, and into the `game` subdirectory.
 * Have fun with the preset!
 
 
-# Instructions on Use
+## Instructions on Use
 
 Because of the way this filter works, adjusting lighting can be a bit tricky. The main thing to keep in mind is that color matters almost more than intensity here. 
 
@@ -33,7 +33,7 @@ in particular are very useful to try different looks/feels out for a scene.
 Really, so far I've found lighting a shot in this to be more an art than a science. There's no one setting that will work for everything!
 
 
-# Tweaking the Textures
+## Tweaking the Textures
 
 The textures useful for tweaking are `SketchPattern.png` (the image used to overlay the actual pencil strokes), `SketchPage.png` (the image stuck atop the sketch image, right now just a blank white paper), and `SketchMask.png` (the mask used to show the sketch through the page). If you use the optional `SketchPaperOverlay` technique, you'll also
 want `SketchOverlay.png`—changing these can change the look of your picture rather dramatically.
@@ -41,11 +41,13 @@ want `SketchOverlay.png`—changing these can change the look of your picture ra
 I admit I haven't found another good pencil stroke texture that I like yet;
 when I do, I'll add additional SketchPattern textures and update the techniques so that it's possible to switch between various options.
 
-# Credits and Attribution
+## Credits and Attribution
 
-`SketchLevel<whatever>.fx` shaders are just the standard GShade Level shader, duplicated and modified so they don't conflict with other people's customized Layer setups. The actual shaders remain the work of their original authors.
+`Sketch_MaskCopy` and `Sketch_MaskApply` are just the standard ReShade `UIMask.fx`, modified to be specific to this particular preset (again, in order to avoid conflicts).
 
-`SketchMask.fx` is the standard ReShade `UIMask.fx`, modified to be specific to this particular preset (again, in order to avoid conflicts).
+The rest of the `Sketch_<whatever>` techniques are just the standard GShade Level shader, duplicated and modified so they don't conflict with other people's customized Layer setups. 
+
+The actual shaders remain the work of their original authors.
 
 The pencil sketch texture started life as a tile by Werner Hörer licensed under Creative Commons Share-Alike; anyone is free to use the modified version included herein. The original can be found at https://www.flickr.com/photos/63231715@N00/404666644
 

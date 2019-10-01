@@ -2,9 +2,9 @@
     UIMask (base for SketchMask techniques) Copyright (c) 2017 Lucas Melo
     Layer (base for Layer techniques) by CeeJay.dk, seri14, and Merot Satil
     
-    Modified into Sketchbook.fx by Packetdancer to avoid conflicts with
+    Modified into pkd_Sketchbook.fx by Packetdancer to avoid conflicts with
     existing textures. (Yes, I could've just done preprocessor for Layer, 
-    but not for UIMask without modification; I might was well just bundle
+    but not for UIMask without modification; I might as well just bundle
     them all.)
 
     MIT Licensed:
