@@ -68,6 +68,13 @@ uniform bool bDisplayMask <
         "Useful for checking if you replace the mask image.";
 > = false;
 
+uniform int iMask_Select <
+    ui_label = "Mask Style";
+    ui_tooltip = "What should the edges of this sketch look like?";
+    ui_type = "combo";
+    ui_items = "Rough\0Smooth";
+> = 0;
+
 #if SKETCHMASK_MULTICHANNEL
 uniform bool toggle_red <source="key"; keycode=SKETCHMASK_TOGGLEKEY_RED; toggle=true;>;
 uniform bool toggle_green <source="key"; keycode=SKETCHMASK_TOGGLEKEY_GREEN; toggle=true;>;
@@ -75,27 +82,48 @@ uniform bool toggle_blue <source="key"; keycode=SKETCHMASK_TOGGLEKEY_BLUE; toggl
 #endif
 
 texture tSketchMask_Backup { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; };
+
 texture tSketchMask_Mask <source="SketchMask.png";> { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format=TEXFORMAT; };
+texture tSketchMask_Mask2 <source="SketchMask2.png";> { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format=TEXFORMAT; };
 
 sampler sSketchMask_Mask { Texture = tSketchMask_Mask; };
+sampler sSketchMask_Mask2 { Texture = tSketchMask_Mask2; };
 sampler sSketchMask_Backup { Texture = tSketchMask_Backup; };
 
 float4 PS_Backup(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target {
     return tex2D(ReShade::BackBuffer, uv);
 }
 
-float4 PS_ApplyMask(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target {
-    float3 col = tex2D(ReShade::BackBuffer, uv).rgb;
-    float3 bak = tex2D(sSketchMask_Backup, uv).rgb;
-    
+float CalculateMask(sampler maskSampler, float2 uv)
+{
     #if !SketchMask_MULTICHANNEL
-    float mask = tex2D(sSketchMask_Mask, uv).r;
+    float mask = tex2D(maskSampler, uv).r;
     #else
-    float3 mask_rgb = tex2D(sSketchMask_Mask, uv).rgb;
+    float3 mask_rgb = tex2D(maskSampler, uv).rgb;
     //This just works, it basically adds masking with each channel that has been toggled.
     //'toggle_red' is inverted so it defaults to 'true' upon start.
     float mask = saturate(1.0 - dot(1.0 - mask_rgb, float3(!toggle_red, toggle_green, toggle_blue)));
     #endif
+
+    return mask;
+}
+
+float4 PS_ApplyMask(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target {
+    float3 col = tex2D(ReShade::BackBuffer, uv).rgb;
+    float3 bak = tex2D(sSketchMask_Backup, uv).rgb;
+  
+    bool bSmoothMask = (iMask_Select == 1);
+
+    float mask = 0.0;
+
+    if (iMask_Select == 0) 
+    {
+        mask = CalculateMask(sSketchMask_Mask, uv);
+    }
+    else if (iMask_Select == 1)
+    {
+        mask = CalculateMask(sSketchMask_Mask2, uv);
+    }
 
     mask = lerp(1.0, mask, fMask_Intensity);
     col = lerp(bak, col, mask);
@@ -104,7 +132,7 @@ float4 PS_ApplyMask(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target 
     return float4(col, 1.0);
 }
 
-technique Sketch_MaskCopy {
+technique pkd_Sketch_MaskCopy {
     pass {
         VertexShader = PostProcessVS;
         PixelShader = PS_Backup;
@@ -112,7 +140,7 @@ technique Sketch_MaskCopy {
     }
 }
 
-technique Sketch_MaskApply {
+technique pkd_Sketch_MaskApply {
     pass {
         VertexShader = PostProcessVS;
         PixelShader = PS_ApplyMask;
@@ -167,7 +195,7 @@ void PS_Layer_PencilHatch(in float4 pos : SV_Position, float2 texcoord : TEXCOOR
   	color.a = backbuffer.a;
 }
 
-technique Sketch_Pencil {
+technique pkd_Sketch_Pencil {
     pass
     {
         VertexShader = PostProcessVS;
@@ -217,7 +245,7 @@ void PS_Layer_PaperBase(in float4 pos : SV_Position, float2 texcoord : TEXCOORD,
   	color.a = backbuffer.a;
 }
 
-technique Sketch_PaperBase {
+technique pkd_Sketch_PaperBase {
     pass
     {
         VertexShader = PostProcessVS;
@@ -267,7 +295,7 @@ void PS_Layer_PaperOverlay(in float4 pos : SV_Position, float2 texcoord : TEXCOO
   	color.a = backbuffer.a;
 }
 
-technique Sketch_PaperOverlay {
+technique pkd_Sketch_PaperOverlay {
     pass
     {
         VertexShader = PostProcessVS;
