@@ -43,9 +43,9 @@ when I do, I'll add additional SketchPattern textures and update the techniques 
 
 ## Credits and Attribution
 
-`Sketch_MaskCopy` and `Sketch_MaskApply` are just the standard ReShade `UIMask.fx`, modified to be specific to this particular preset (again, in order to avoid conflicts).
+`pkd_Sketch_MaskCopy` and `pkd_Sketch_MaskApply` are just the standard ReShade `UIMask.fx`, modified to be specific to this particular preset (again, in order to avoid conflicts).
 
-The rest of the `Sketch_<whatever>` techniques are just the standard GShade Level shader, duplicated and modified so they don't conflict with other people's customized Layer setups. 
+The rest of the `pkd_Sketch_<whatever>` techniques are just the standard GShade Level shader, duplicated and modified so they don't conflict with other people's customized Layer setups. 
 
 The actual shaders remain the work of their original authors.
 
