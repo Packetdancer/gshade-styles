@@ -1,4 +1,4 @@
-# Sketchbook Style
+# OilPainting Style
 
 ![Sketchbook Style Example](https://github.com/packetdancer/gshade-styles/raw/master/OilPainting/example.png)
 
