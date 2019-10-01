@@ -15,3 +15,5 @@ The "Sketchbook" preset is meant to evoke pencil sketching in a sketchbook; it c
 ![OilPainting Style Example](https://github.com/packetdancer/gshade-styles/raw/master/OilPainting/example.png)
 
 The "OilPainting" preset is meant to look vaguely like a painting, as the name might imply. The detail level and appearance can be tuned somewhat by adjusting the pkd_Kuwahara technique's configuration.
+
+(Unfortunately, the effect is somewhat lost when the images are resized smaller; you will want to click on the example image above to see it in full size.)
