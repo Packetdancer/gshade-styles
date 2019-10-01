@@ -23,4 +23,4 @@ Normally the Kuwahara filter is applied in squares, which can lead to an oddly b
 
 ## Credits and Attribution
 
-While `pkd_Kuwahara.fx` is my own work, pieces of it were inspired by the Nvidia 
+While `pkd_Kuwahara.fx` is my own work, pieces of it were inspired by the Nvidia reference HLSL implementation of a Kuwahara filter, and the rotational bit was inspired by someone's discussion on a forum of how to ensure Kuwahara filters don't have 'blocky' edges; I cannot claim the idea as my own.
