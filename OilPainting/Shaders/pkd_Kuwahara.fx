@@ -8,6 +8,13 @@
 	kernel for that pixel will be rotated to match that angle. This creates a
 	slightly smoother effect, where things look a little more like brushstrokes.
 
+	The 'adaptive' functionality will run the filter for each quadrant repeatedly,
+	for sizes between that passed in and the minimum adaptive size defined in 
+	configuration. The result with the smallest variance will be taken. This
+	will create a much sharper result, especially when combined with rotation,
+	as it should honor lines. This is less useful for the painting, really,
+	and more for if this shader is used as a denoise pass.
+
 	It's worth noting that if the LOD and the Radius values get too far out of
 	alignment, the results get... interesting.
 
@@ -16,8 +23,12 @@
 
 	CHANGELOG:
 
+	v1.1 - 2019/10/01
+	* Add depth-aware Kuwahara variant.
+	* Improve rotation logic.
+
 	v1.0 - 2019/09/30
-	* Initial release
+	* Initial release, with baseline and rotated Kuwahara variants.
 
 */
 
@@ -26,32 +37,56 @@
 
 static const float2 PIXEL_SIZE 		= float2(BUFFER_RCP_WIDTH, BUFFER_RCP_HEIGHT);
 
-#define TEXEL_SIZE_FOR_LOD(x) PIXEL_SIZE.xy * pow(2.0,x);
+#define TEXEL_SIZE_FOR_LOD(lod) PIXEL_SIZE.xy * pow(2.0, lod);
 
 static const float3 CFG_KUWAHARA_LUMINANCE = float3(0.3, 0.6, 0.1);
-
-uniform float CFG_KUWAHARA_LOD <
-	ui_type = "slider";
-	ui_label = "Texel LOD";
-	ui_tooltip = "How large of a texel should we use when performing the Kuwahara convolution. Smaller numbers are more detail, larger are less.";
-	ui_min = -1.0; ui_max = 2.5; ui_step = 0.01;
-> = -0.4;
 
 uniform int2 CFG_KUWAHARA_RADIUS <
 	ui_type = "slider";
 	ui_label = "Radius";
 	ui_tooltip = "X and Y radius of the kernels to use.";
-	ui_min = 2; ui_max = 10; ui_step = 1;
-> = int2(5, 5);
+	ui_min = 1; ui_max = 6; ui_step = 1;
+> = int2(4, 4);
+
+uniform float CFG_KUWAHARA_LOD <
+ 	ui_type = "slider";
+ 	ui_category = "Experimental";
+ 	ui_label = "Texel LOD";
+	ui_tooltip = "How large of a texel offset should we use when performing the Kuwahara convolution. Smaller numbers are more detail, larger are less.";
+	ui_min = 0.25; ui_max = 2.0; ui_step = 0.01;
+> = 0.2;
 
 uniform bool CFG_KUWAHARA_ROTATION <
+	ui_category = "Experimental";
 	ui_label = "Enable Rotation";
-	ui_tooltip = "If true, the Kuwahara kernel calculation will be rotated to the dominant angle. In theory, this should produce a smoother effect.";
+	ui_tooltip = "If true, the Kuwahara kernel calculation will be rotated to the dominant angle. In theory, this should produce a slightly more painting-like effect.";
 > = true;
+
+uniform bool CFG_KUWAHARA_DEPTHAWARE <
+	ui_category = "Experimental";
+	ui_label = "Enable Depth Awareness";
+	ui_tooltip = "Adjust the Kuwahara radius based on depth, which will ensure the foreground elements have more detail than background.";
+> = false;
+
+uniform float2 CFG_KUWAHARA_DEPTHAWARE_CURVE <
+	ui_type = "slider";
+	ui_category = "Experimental";
+	ui_label = "Curve Ends";
+	ui_tooltip = "Start/end values for where the foreground will transition to the background.";
+	ui_min = 0.0; ui_max = 1.0; ui_step = 0.01;
+> = float2(0.12, 0.55);
+
+uniform int2 CFG_KUWAHARA_DEPTHAWARE_MINRADIUS <
+	ui_type = "slider";
+	ui_category = "Experimental";
+	ui_label = "Minimum Radius";
+	ui_tooltip = "The smallest radius, to use for the foreground elements.";
+	ui_min = 1; ui_max = 5; ui_step = 1;
+> = int2(2, 2);
 
 float PixelAngle(float2 texcoord : TEXCOORD0)
 {
-    float sobelX[9] = {1, 2, 1, 0, 0, 0, -1, -2, -1}; 
+    float sobelX[9] = {-1, -2, -1, 0, 0, 0, 1, 2, 1}; 
     float sobelY[9] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
 	int sobelIndex = 0;
 
@@ -63,9 +98,9 @@ float PixelAngle(float2 texcoord : TEXCOORD0)
 	{
 		for (int y = -1; y <= 1; y++)
 		{
-			float2 offset = float2(x, y) * texelSize;
-			float3 color = tex2D(ReShade::BackBuffer, texcoord + offset).rgb;
-			float value = dot(color, color);
+			float2 offset = float2(x, y) * (texelSize * 0.5);
+			float3 color = tex2Dlod(ReShade::BackBuffer, float4((texcoord + offset).xy, 0, 0)).rgb;
+			float value = dot(color, float3(0.3, 0.59, 0.11));
 
 			gradient[0] += value * sobelX[sobelIndex];
 			gradient[1] += value * sobelY[sobelIndex];
@@ -83,24 +118,26 @@ float4 KernelMeanAndVariance(float2 origin : TEXCOORD0, float4 kernelRange,
 	float3 variance = float3(0, 0, 0);
 	int samples = 0;
 
+	float4 range = kernelRange;
+
 	float2 texelSize = TEXEL_SIZE_FOR_LOD(CFG_KUWAHARA_LOD);
 
-	for (int x = kernelRange.x; x <= kernelRange.y; x++) 
+	for (int u = range.x; u <= range.y; u++) 
 	{
-		for (int y = kernelRange.z; y <= kernelRange.w; y++)
+		for (int v = kernelRange.z; (v <= kernelRange.w); v++)
 		{
 			float2 offset = 0.0;
 
 			if (CFG_KUWAHARA_ROTATION) 
 			{
-				offset = mul(float2(x, y) * texelSize, rotation);
+				offset = mul(float2(u, v) * texelSize, rotation);
 			}
 			else 
 			{
-				offset = float2(x, y) * texelSize;
+				offset = float2(u, v) * texelSize;
 			}
 
-			float3 color = tex2D(ReShade::BackBuffer, origin + offset).rgb;
+			float3 color = tex2Dlod(ReShade::BackBuffer, float4((origin + offset).xy, 0, 0)).rgb;
 
 			mean += color; variance += color * color;
 			samples++;
@@ -125,19 +162,32 @@ float3 PS_Kuwahara(float4 pos : SV_Position, float2 texcoord : TEXCOORD0) : SV_T
 		rotation = float2x2(cos(angle), -sin(angle), sin(angle), cos(angle));
 	}
 
+	float2 radius = float2(CFG_KUWAHARA_RADIUS);
+
+	if (CFG_KUWAHARA_DEPTHAWARE) 
+	{
+		float2 delta = float2(CFG_KUWAHARA_RADIUS - CFG_KUWAHARA_DEPTHAWARE_MINRADIUS);
+
+		float depth = ReShade::GetLinearizedDepth(texcoord).x;
+
+		float percent = smoothstep(CFG_KUWAHARA_DEPTHAWARE_CURVE[0], 
+			CFG_KUWAHARA_DEPTHAWARE_CURVE[1], depth);
+
+		radius = float2(CFG_KUWAHARA_DEPTHAWARE_MINRADIUS) + (delta * percent);
+	}
+
 	float4 range;
 
-	// Calculate e
-	range = float4(-CFG_KUWAHARA_RADIUS[0], 0, -CFG_KUWAHARA_RADIUS[1], 0);
+	range = float4(-radius[0], 0, -radius[1], 0);		
 	meanVariance[0] = KernelMeanAndVariance(texcoord, range, rotation);
 
-	range = float4(0, CFG_KUWAHARA_RADIUS[0], -CFG_KUWAHARA_RADIUS[1], 0);
+	range = float4(0, radius[0], -radius[1], 0);
 	meanVariance[1] = KernelMeanAndVariance(texcoord, range, rotation);
 
-	range = float4(-CFG_KUWAHARA_RADIUS[0], 0, 0, CFG_KUWAHARA_RADIUS[1]);
+	range = float4(-radius[0], 0, 0, radius[1]);
 	meanVariance[2] = KernelMeanAndVariance(texcoord, range, rotation);
 
-	range = float4(0, CFG_KUWAHARA_RADIUS[0], 0, CFG_KUWAHARA_RADIUS[1]);
+	range = float4(0, radius[0], 0, radius[1]);
 	meanVariance[3] = KernelMeanAndVariance(texcoord, range, rotation);
 
 	float3 result = meanVariance[0].rgb;
