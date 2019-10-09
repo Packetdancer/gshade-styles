@@ -8,12 +8,13 @@
 	kernel for that pixel will be rotated to match that angle. This creates a
 	slightly smoother effect, where things look a little more like brushstrokes.
 
-	The 'adaptive' functionality will run the filter for each quadrant repeatedly,
-	for sizes between that passed in and the minimum adaptive size defined in 
-	configuration. The result with the smallest variance will be taken. This
-	will create a much sharper result, especially when combined with rotation,
-	as it should honor lines. This is less useful for the painting, really,
-	and more for if this shader is used as a denoise pass.
+	The depth-aware part will increase the radius based on distance from the camera;
+	it's not complex, but the effect is that the background will be 'painted' with
+	less detail than the foreground.
+
+	I had an 'adaptive' mode that alternatively tried to figure out the ideal 
+	radius for a given kernel, but it did not play well with others (and was 
+	kind of computationally expensive), so I yanked that functionality.
 
 	It's worth noting that if the LOD and the Radius values get too far out of
 	alignment, the results get... interesting.
